@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>QR Code Generator</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 420px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+
+        input[type=text] {
+            width: 100%;
+            padding: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        label {
+            display: block;
+            margin-top: 14px;
+            font-weight: 600;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+            margin-top: 16px;
+            border: 1px solid #ccc;
+        }
+
+        a.btn {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: #2a3cff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>QR Code Generator</h1>
+
+    <label for="url">URL or text</label>
+    <input type="text" id="url" value="https://google.com">
+
+    <label for="ec">Error correction</label>
+    <select id="ec">
+        <option value="L">L (7%)</option>
+        <option value="M" selected>M (15%)</option>
+        <option value="Q">Q (25%)</option>
+        <option value="H">H (30%)</option>
+    </select>
+
+    <label for="box">Pixels per module: <span id="boxv">10</span></label>
+    <input type="range" id="box" min="2" max="40" value="10">
+
+    <canvas id="qr"></canvas>
+    <a class="btn" id="dl" download="qrcode.png">Save QRCode as PNG</a>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <script>
+        const url = document.getElementById('url');
+        const ec = document.getElementById('ec');
+        const box = document.getElementById('box');
+        const canvas = document.getElementById('qr');
+        const dl = document.getElementById('dl');
+
+        function render() {
+            document.getElementById('boxv').textContent = box.value;
+            if (!url.value.trim()) return;
+
+            // Use UTF-8 so umlauts and special characters are encoded correctly
+            qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+
+            const qr = qrcode(0, ec.value);   // 0 = pick the version automatically
+            qr.addData(url.value);
+            qr.make();
+
+            const n = qr.getModuleCount();
+            const b = +box.value;
+            const border = 4;
+            const size = (n + 2 * border) * b;
+
+            canvas.width = canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, size, size);
+            ctx.fillStyle = '#000';
+
+            // Draw one square
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c < n; c++) {
+                    if (qr.isDark(r, c)) ctx.fillRect((c + border) * b, (r + border) * b, b, b);
+                }
+            }
+            dl.href = canvas.toDataURL('image/png');
+        }
+
+        [url, ec, box].forEach(el => el.addEventListener('input', render));
+        render();
+    </script>
+</body>
+
+</html>
